@@ -9,3 +9,48 @@ export async function pingBackend() {
 
   return response.json();
 }
+
+
+export async function createGame() {
+  const response = await fetch(`${API_BASE_URL}/api/games`, {
+    method: "POST",
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to create game");
+  }
+
+  return response.json();
+}
+
+export async function getGame(gameId) {
+  const response = await fetch(
+    `${API_BASE_URL}/api/games/${gameId}`
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to retrieve game");
+  }
+
+  return response.json();
+}
+
+export async function makePlayerMove(gameId, column) {
+  const response = await fetch(
+    `${API_BASE_URL}/api/games/${gameId}/moves`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ column }),
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to apply player move");
+  }
+
+  return response.json();
+}
+

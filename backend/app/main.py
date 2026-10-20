@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import router as api_router
+from app.api.game_routes import router as game_router
 
 app = FastAPI(
     title="Connect Four vs. AI API",
@@ -20,6 +21,7 @@ app.add_middleware(
 )
 
 app.include_router(api_router)
+app.include_router(game_router)
 
 @app.get("/health")
 def health_check():
