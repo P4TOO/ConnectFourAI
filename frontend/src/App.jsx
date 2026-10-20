@@ -1,122 +1,141 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+
+import { useEffect, useRef, useState } from "react";
+import {
+  createGame,
+  getGame,
+  makePlayerMove,
+} from "./services/api";
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [game, setGame] = useState(null);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const requestPending = useRef(false);
+
+  useEffect(() => {
+    let active = true;
+
+    createGame()
+      .then((data) => {
+        if (active) setGame(data);
+      })
+      .catch((err) => {
+        if (active) setError(err.message);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  async function handleColumnClick(column) {
+    if (
+      !game ||
+      game.current_player !== 1 ||
+      game.status !== "ongoing" ||
+      requestPending.current
+    ) {
+      return;
+    }
+
+    requestPending.current = true;
+    setLoading(true);
+    setError("");
+
+    try {
+      const updatedGame = await makePlayerMove(
+        game.game_id,
+        column
+      );
+      setGame(updatedGame);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      requestPending.current = false;
+      setLoading(false);
+    }
+  }
+
+  async function handleRefresh() {
+    if (!game || requestPending.current) return;
+
+    requestPending.current = true;
+    setLoading(true);
+    setError("");
+
+    try {
+      const updatedGame = await getGame(game.game_id);
+      setGame(updatedGame);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      requestPending.current = false;
+      setLoading(false);
+    }
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <main style={{ padding: "2rem", textAlign: "center" }}>
+      <h1>ConnectFourAI</h1>
+      <p>Temporary API Integration Test</p>
 
-      <div className="ticks"></div>
+      {error && <p style={{ color: "red" }}>{error}</p>}
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+      {game && (
+        <>
+          <p>Game ID: {game.game_id}</p>
+          <p>Current Player: {game.current_player}</p>
+          <p>Game Status: {game.status}</p>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(7, 50px)",
+              gap: "5px",
+              justifyContent: "center",
+              margin: "20px auto",
+            }}
+          >
+            {game.board.flatMap((row, rowIndex) =>
+              row.map((cell, colIndex) => (
+                <button
+                  key={`${rowIndex}-${colIndex}`}
+                  onClick={() => handleColumnClick(colIndex)}
+                  disabled={
+                    loading ||
+                    game.current_player !== 1 ||
+                    game.status !== "ongoing"
+                  }
+                  style={{
+                    width: "50px",
+                    height: "50px",
+                    borderRadius: "50%",
+                    border: "2px solid #333",
+                    backgroundColor:
+                      cell === 1
+                        ? "red"
+                        : cell === 2
+                          ? "yellow"
+                          : "white",
+                    cursor: "pointer",
+                  }}
+                />
+              ))
+            )}
+          </div>
+
+          <button onClick={handleRefresh} disabled={loading}>
+            Refresh Board from Python
+          </button>
+        </>
+      )}
+
+      {loading && <p>Loading...</p>}
+    </main>
+  );
 }
 
-export default App
+export default App;
