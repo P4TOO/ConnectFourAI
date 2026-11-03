@@ -3,103 +3,85 @@ from collections.abc import Callable
 
 from app.game.board import GameState, PLAYER_ONE, PLAYER_TWO
 
-# Returns the winning player, or None when nobody has won.
-WinnerCheck = Callable[[list[list[int]]], int | None]
-
-WIN_SCORE = 1000
-
-
-def minimax(
-    game: GameState,
-    depth: int,
-    ai_player: int,
-    check_winner: WinnerCheck,
-) -> int:
-    """Evaluate a game state using depth-limited Minimax."""
-
-    winner = check_winner(game.board)
-
-    # Terminal states: AI victory or human victory.
-    if winner is not None:
+#Evaluate score of gamestate (Rewarding & Punishment) called in both player and AI turn
+def minimax(simulated_game: GameState, depth: int, ai_player: int, check_winner: Callable) -> int:
+    winner = check_winner(simulated_game.board)
+    
+    if winner is not None:   
+        #AI wins 
         if winner == ai_player:
-            return WIN_SCORE + depth
-        return -WIN_SCORE - depth
-
-    valid_moves = game.get_valid_moves()
-
-    # Draw or depth limit reached.
-    if not valid_moves or depth == 0:
+            return 1000
+        #Player wins
+        elif winner != ai_player:
+            return -1000
+        
+    #Get available columns
+    available_columns = simulated_game.get_valid_moves()
+        
+    #All columns are full
+    if len(available_columns) == 0:
         return 0
-
-    maximizing = game.current_player == ai_player
-
-    if maximizing:
+    
+    #Depth reaches zero
+    if depth == 0:
+        return 0
+    
+    if simulated_game.current_player == ai_player:
         best_score = float("-inf")
-
-        for column in valid_moves:
-            simulated = game.clone()
-            simulated.apply_move(column)
-
-            score = minimax(
-                simulated, depth - 1, ai_player, check_winner
-            )
-
-            best_score = max(best_score, score)
-
-        return best_score
-
     else:
         best_score = float("inf")
+    
+    #Select available column
+    for column in available_columns:
+        #Create copy of game
+        clone_game = simulated_game.clone()
+        
+        #Simulate move
+        clone_game.apply_move(column)
+        
+        score = minimax(clone_game, depth - 1, ai_player, check_winner)
+        
+        if simulated_game.current_player == ai_player:
+            best_score = max(score, best_score)
+        else:
+            best_score = min(score, best_score)
+            
+    return best_score
 
-        for column in valid_moves:
-            simulated = game.clone()
-            simulated.apply_move(column)
-
-            score = minimax(
-                simulated, depth - 1, ai_player, check_winner
-            )
-
-            best_score = min(best_score, score)
-
-        return best_score
-
-
-def choose_move(
-    game: GameState,
-    depth: int,
-    check_winner: WinnerCheck,
-) -> int:
-    """Choose the best available move for the current AI player."""
-
-    if depth < 1:
-        raise ValueError("Search depth must be at least 1.")
-
-    ai_player = game.current_player
-
-    if ai_player not in (PLAYER_ONE, PLAYER_TWO):
-        raise ValueError("Invalid current player.")
-
-    if check_winner(game.board) is not None:
-        raise ValueError("The game has already been won.")
-
-    valid_moves = game.get_valid_moves()
-
-    if not valid_moves:
-        raise ValueError("No legal moves available.")
-
+#Find the best move the AI can make (Called only during AI turn)
+def choose_move(game: GameState, depth: int, check_winner: Callable) -> int:
+    winner = check_winner(game.board)
+    
+    if winner is not None:   
+        raise ValueError("Game is already over.")
+    
+    #Get all available columns
+    available_columns = game.get_valid_moves()
+    
+    if len(available_columns) == 0:
+        raise ValueError("No available moves.")
+    
+    if depth <= 0:
+        raise ValueError("Depth must be greater than zero.")
+    
     best_score = float("-inf")
-    best_column = valid_moves[0]
-
-    for column in valid_moves:
-        simulated = game.clone()
-        simulated.apply_move(column)
-
-        score = minimax(
-            simulated, depth - 1, ai_player, check_winner
-        )
-
+    best_column = -1
+    ai_player = game.current_player
+    
+    for column in available_columns:
+        #Create copy of game
+        clone_game = game.clone()
+        
+        #Simulate move
+        clone_game.apply_move(column)
+        
+        score = minimax(clone_game, depth - 1, ai_player, check_winner)
+        
         if score > best_score:
-            best_score = score
             best_column = column
-
+            best_score = score
+    
     return best_column
+        
+        
+        
