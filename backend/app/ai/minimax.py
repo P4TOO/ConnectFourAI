@@ -1,7 +1,9 @@
 
 from collections.abc import Callable
 
-from app.game.board import GameState, PLAYER_ONE, PLAYER_TWO
+from app.game.board import GameState
+
+from app.ai.evaluation import evaluate_board
 
 #Evaluate score of gamestate (Rewarding & Punishment) called in both player and AI turn
 def minimax(simulated_game: GameState, depth: int, ai_player: int, check_winner: Callable) -> int:
