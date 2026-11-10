@@ -1,19 +1,21 @@
 
 from collections.abc import Callable
 
-from app.game.board import GameState, PLAYER_ONE, PLAYER_TWO
+from app.game.board import GameState
+
+from app.ai.evaluation import evaluate_board
 
 #Evaluate score of gamestate (Rewarding & Punishment) called in both player and AI turn
-def minimax(simulated_game: GameState, depth: int, ai_player: int, check_winner: Callable) -> int:
+def minimax(simulated_game: GameState, depth: int, ai_player: int, check_winner: Callable, alpha: float, beta: float) -> int:
     winner = check_winner(simulated_game.board)
     
     if winner is not None:   
         #AI wins 
         if winner == ai_player:
-            return 1000
+            return 1_000_000 + depth
         #Player wins
         elif winner != ai_player:
-            return -1000
+            return -1_000_000 - depth
         
     #Get available columns
     available_columns = simulated_game.get_valid_moves()
@@ -24,7 +26,7 @@ def minimax(simulated_game: GameState, depth: int, ai_player: int, check_winner:
     
     #Depth reaches zero
     if depth == 0:
-        return 0
+        return evaluate_board(simulated_game, ai_player)
     
     if simulated_game.current_player == ai_player:
         best_score = float("-inf")
@@ -39,12 +41,17 @@ def minimax(simulated_game: GameState, depth: int, ai_player: int, check_winner:
         #Simulate move
         clone_game.apply_move(column)
         
-        score = minimax(clone_game, depth - 1, ai_player, check_winner)
+        score = minimax(clone_game, depth - 1, ai_player, check_winner, alpha, beta)
         
         if simulated_game.current_player == ai_player:
             best_score = max(score, best_score)
+            alpha = max(alpha, best_score)
         else:
             best_score = min(score, best_score)
+            beta = min(beta, best_score) 
+            
+        if alpha >= beta:
+            break
             
     return best_score
 
@@ -67,6 +74,8 @@ def choose_move(game: GameState, depth: int, check_winner: Callable) -> int:
     best_score = float("-inf")
     best_column = -1
     ai_player = game.current_player
+    alpha = float("-inf")
+    beta = float("inf")
     
     for column in available_columns:
         #Create copy of game
@@ -75,11 +84,12 @@ def choose_move(game: GameState, depth: int, check_winner: Callable) -> int:
         #Simulate move
         clone_game.apply_move(column)
         
-        score = minimax(clone_game, depth - 1, ai_player, check_winner)
+        score = minimax(clone_game, depth - 1, ai_player, check_winner, alpha, beta)
         
         if score > best_score:
             best_column = column
             best_score = score
+            alpha = score
     
     return best_column
         
