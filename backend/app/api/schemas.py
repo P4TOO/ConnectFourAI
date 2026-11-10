@@ -38,3 +38,6 @@ class AIMetrics(BaseModel):
 
 class AIMoveResponse(GameStateResponse):
     metrics: AIMetrics
+    
+class AIMoveRequest(BaseModel):
+    difficulty: Literal["easy", "medium", "hard"] = "medium"

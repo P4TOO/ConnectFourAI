@@ -1,7 +1,10 @@
 
+from collections.abc import Callable
 from uuid import uuid4
 
-from app.game.board import GameState
+from app.ai.difficulty import parse_difficulty
+from app.ai.minimax import choose_move
+from app.game.board import GameState, PLAYER_ONE, PLAYER_TWO
 
 # In-memory storage for active games.
 games: dict[str, GameState] = {}
@@ -46,3 +49,15 @@ def apply_player_move(
 
     return game.clone(), row
 
+def get_ai_move(game_id: str, difficulty: str, check_winner: Callable) -> int:
+    clone_game = get_game(game_id)
+    
+    if clone_game is None:
+        raise KeyError("Game couldn't be found")
+    
+    if clone_game.current_player != PLAYER_TWO:
+        raise ValueError("It is not the AI player's turn")
+        
+    move = choose_move(clone_game, parse_difficulty(difficulty), check_winner)
+    
+    return move

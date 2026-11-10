@@ -1,11 +1,28 @@
-from fastapi import APIRouter, HTTPException
+from collections.abc import Callable
 
-from app.api.schemas import GameStateResponse, MoveRequest, MoveInfo
-from app.services.game_service import create_game, get_game, apply_player_move
+from fastapi import APIRouter, Depends, HTTPException
+
+from app.api.schemas import (
+    AIMoveRequest,
+    GameStateResponse,
+    MoveRequest,
+    MoveInfo,
+)
+from app.services.game_service import (
+    create_game,
+    get_game,
+    apply_player_move,
+    get_ai_move,
+)
 
 router = APIRouter(prefix="/api/games", tags=["Games"])
 
-
+def get_winner_checker() -> Callable:
+    raise HTTPException(
+        status_code=503,
+        detail="Winner checking is not integrated yet.",
+    )
+    
 def build_response(game_id, game):
     """Convert a GameState into an API response."""
     return GameStateResponse(
@@ -68,3 +85,30 @@ def player_move_endpoint(game_id: str, request: MoveRequest):
     )
 
     return response
+
+@router.post("/{game_id}/ai-move")
+def ai_move_endpoint(
+    game_id: str,
+    request: AIMoveRequest,
+    check_winner: Callable = Depends(get_winner_checker),
+):
+    try:
+        column = get_ai_move(
+            game_id,
+            request.difficulty,
+            check_winner,
+        )
+
+    except KeyError:
+        raise HTTPException(
+            status_code=404,
+            detail="Game not found",
+        ) from None
+
+    except ValueError as error:
+        raise HTTPException(
+            status_code=400,
+            detail=str(error),
+        ) from None
+
+    return {"column": column}
