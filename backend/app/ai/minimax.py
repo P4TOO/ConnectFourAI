@@ -26,7 +26,7 @@ def minimax(simulated_game: GameState, depth: int, ai_player: int, check_winner:
     
     #Depth reaches zero
     if depth == 0:
-        return 0
+        return evaluate_board(simulated_game, ai_player)
     
     if simulated_game.current_player == ai_player:
         best_score = float("-inf")
