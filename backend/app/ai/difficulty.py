@@ -6,11 +6,13 @@ class Difficulty(IntEnum):
     HARD = 6
     
 def parse_difficulty(difficulty: str) -> Difficulty:
-    if difficulty.strip().upper() == "EASY":
+    difficulty = difficulty.strip().upper()
+    
+    if difficulty == "EASY":
         return Difficulty.EASY
-    elif difficulty.strip().upper() == "MEDIUM":
+    elif difficulty == "MEDIUM":
         return Difficulty.MEDIUM
-    elif difficulty.strip().upper() == "HARD":
+    elif difficulty == "HARD":
         return Difficulty.HARD
     
     raise ValueError("Invalid difficulty level.")

@@ -23,6 +23,10 @@ def get_winner_checker() -> Callable:
         detail="Winner checking is not integrated yet.",
     )
     
+def get_mcts_selector() -> Callable | None:
+    """Return the MCTS implementation when available."""
+    return None
+    
 def build_response(game_id, game):
     """Convert a GameState into an API response."""
     return GameStateResponse(
@@ -91,18 +95,27 @@ def ai_move_endpoint(
     game_id: str,
     request: AIMoveRequest,
     check_winner: Callable = Depends(get_winner_checker),
+    mcts_selector: Callable | None = Depends(get_mcts_selector),
 ):
     try:
         column = get_ai_move(
             game_id,
+            request.algorithm,
             request.difficulty,
             check_winner,
+            mcts_selector=mcts_selector,
         )
 
     except KeyError:
         raise HTTPException(
             status_code=404,
             detail="Game not found",
+        ) from None
+
+    except NotImplementedError as error:
+        raise HTTPException(
+            status_code=503,
+            detail=str(error),
         ) from None
 
     except ValueError as error:

@@ -7,7 +7,7 @@ Board = list[list[int]]
 
 
 class GameCreateRequest(BaseModel):
-    algorithm: Literal["minimax", "mcts", "random"] = "minimax"
+    algorithm: Literal["minimax", "mcts"] = "minimax"
     difficulty: Literal["easy", "medium", "hard"] = "medium"
 
 
@@ -40,4 +40,5 @@ class AIMoveResponse(GameStateResponse):
     metrics: AIMetrics
     
 class AIMoveRequest(BaseModel):
+    algorithm: Literal["minimax", "mcts"] = "minimax"
     difficulty: Literal["easy", "medium", "hard"] = "medium"

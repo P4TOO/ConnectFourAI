@@ -3,6 +3,7 @@ from collections.abc import Callable
 from uuid import uuid4
 
 from app.ai.difficulty import parse_difficulty
+from app.ai.algorithm import AlgorithmId, parse_algorithm
 from app.ai.minimax import choose_move
 from app.game.board import GameState, PLAYER_ONE, PLAYER_TWO
 
@@ -49,15 +50,41 @@ def apply_player_move(
 
     return game.clone(), row
 
-def get_ai_move(game_id: str, difficulty: str, check_winner: Callable) -> int:
+def get_ai_move(game_id: str, algorithm: str, difficulty: str, check_winner: Callable, mcts_selector: Callable | None = None) -> int:
     clone_game = get_game(game_id)
+    validate_ai_game(clone_game)
     
-    if clone_game is None:
+    if check_winner(clone_game.board) is not None:
+        raise ValueError("Game is already over.")
+    
+    selected_algorithm = parse_algorithm(algorithm)
+        
+    if selected_algorithm == AlgorithmId.MINIMAX:
+        column = choose_move(clone_game, parse_difficulty(difficulty), check_winner)
+    elif selected_algorithm == AlgorithmId.MCTS:
+        if mcts_selector is None:
+            raise NotImplementedError("MCTS is not integrated yet.")
+        column = mcts_selector(clone_game, difficulty)
+    else:
+        raise ValueError("Invalid algorithm.")
+    
+    #Shared validation for all algorithms
+    validate_ai_move(clone_game, column)
+    
+    return column
+
+def validate_ai_game(game: GameState | None) -> None:
+    if game is None:
         raise KeyError("Game couldn't be found")
     
-    if clone_game.current_player != PLAYER_TWO:
+    if game.current_player != PLAYER_TWO:
         raise ValueError("It is not the AI player's turn")
-        
-    move = choose_move(clone_game, parse_difficulty(difficulty), check_winner)
     
-    return move
+    if not game.get_valid_moves():
+        raise ValueError("No available moves.")
+    
+def validate_ai_move(game: GameState, column: int) -> None:
+    if type(column) is not int:
+        raise ValueError("Invalid data type selected by AI.")
+    if column not in game.get_valid_moves():
+        raise ValueError("Invalid Column Selected by AI.")

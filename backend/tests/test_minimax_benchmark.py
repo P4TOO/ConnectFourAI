@@ -132,6 +132,7 @@ def test_minimax_reliability_and_speed(
 
         column = get_ai_move(
             game_id,
+            "minimax",
             difficulty,
             check_winner,
         )

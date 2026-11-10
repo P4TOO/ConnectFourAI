@@ -85,7 +85,7 @@ def test_difficulty_maps_to_correct_depth(
     )
 
     move = game_service.get_ai_move(
-        ai_game, difficulty, check_winner
+        ai_game, "minimax", difficulty, check_winner
     )
 
     assert move == 3
@@ -101,7 +101,7 @@ def test_ai_returns_legal_move(ai_game):
     game = game_service.get_game(ai_game)
 
     move = game_service.get_ai_move(
-        ai_game, "easy", check_winner
+        ai_game, "minimax", "easy", check_winner
     )
 
     assert isinstance(move, int)
@@ -123,7 +123,7 @@ def test_ai_avoids_full_column(ai_game):
     assert 0 not in original_valid_moves
 
     move = game_service.get_ai_move(
-        ai_game, "easy", check_winner
+        ai_game, "minimax", "easy", check_winner
     )
 
     assert move in original_valid_moves
@@ -138,6 +138,7 @@ def test_ai_rejects_missing_game():
     with pytest.raises(KeyError):
         game_service.get_ai_move(
             "invalid-game-id",
+            "minimax",
             "easy",
             check_winner,
         )
@@ -150,6 +151,7 @@ def test_ai_rejects_human_turn():
         with pytest.raises(ValueError, match="AI player's turn"):
             game_service.get_ai_move(
                 game_id,
+                "minimax",
                 "easy",
                 check_winner,
             )
@@ -165,6 +167,7 @@ def test_ai_rejects_invalid_difficulty(ai_game, difficulty):
     with pytest.raises(ValueError, match="Invalid difficulty"):
         game_service.get_ai_move(
             ai_game,
+            "minimax",
             difficulty,
             check_winner,
         )
@@ -178,7 +181,7 @@ def test_ai_does_not_modify_stored_game(ai_game):
     before = game_service.get_game(ai_game)
 
     move = game_service.get_ai_move(
-        ai_game, "easy", check_winner
+        ai_game, "minimax", "easy", check_winner
     )
 
     after = game_service.get_game(ai_game)
@@ -194,10 +197,10 @@ def test_ai_does_not_apply_selected_move(ai_game):
 
     # Repeated requests should not place any pieces.
     game_service.get_ai_move(
-        ai_game, "easy", check_winner
+        ai_game, "minimax", "easy", check_winner
     )
     game_service.get_ai_move(
-        ai_game, "easy", check_winner
+        ai_game, "minimax", "easy", check_winner
     )
 
     after = game_service.get_game(ai_game)
